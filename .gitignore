@@ -38,3 +38,8 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### AI agents ###
+.agent/
+.claude/
+.codex/
