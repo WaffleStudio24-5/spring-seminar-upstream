@@ -3,6 +3,7 @@ package com.wafflestudio.spring2026.meeting.controller
 import com.wafflestudio.spring2026.meeting.dto.MeetingCreateRequest
 import com.wafflestudio.spring2026.meeting.dto.MeetingResponse
 import com.wafflestudio.spring2026.meeting.service.MeetingService
+import jakarta.validation.Valid
 import java.net.URI
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,7 +20,7 @@ class MeetingController(
 ) {
     @PostMapping
     fun createMeeting(
-        @RequestBody request: MeetingCreateRequest,
+        @Valid @RequestBody request: MeetingCreateRequest,
     ): ResponseEntity<MeetingResponse> {
         val meeting = meetingService.createMeeting(
             title = request.title,
@@ -37,8 +38,7 @@ class MeetingController(
     fun getMeeting(
         @PathVariable("id") id: Long,
     ): ResponseEntity<MeetingResponse> {
-        val meeting = meetingService.findMeeting(id)
-            ?: return ResponseEntity.notFound().build()
+        val meeting = meetingService.getMeeting(id)
 
         return ResponseEntity.ok(
             MeetingResponse.from(meeting),
