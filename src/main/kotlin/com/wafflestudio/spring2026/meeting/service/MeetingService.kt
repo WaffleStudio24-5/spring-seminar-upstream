@@ -1,5 +1,6 @@
 package com.wafflestudio.spring2026.meeting.service
 
+import com.wafflestudio.spring2026.meeting.MeetingNotFoundException
 import com.wafflestudio.spring2026.meeting.model.Meeting
 import com.wafflestudio.spring2026.meeting.repository.MeetingRepository
 import org.springframework.stereotype.Service
@@ -17,5 +18,7 @@ class MeetingService(
             capacity = capacity,
         )
 
-    fun findMeeting(id: Long): Meeting? = meetingRepository.findById(id)
+    fun getMeeting(id: Long): Meeting =
+        meetingRepository.findById(id)
+            ?: throw MeetingNotFoundException(id)
 }
