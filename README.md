@@ -3,7 +3,6 @@
 
 ## 자동 채점 설정
 
-GitHub Actions variable에 다음 값을 설정하면 `main` push 시 채점 서버를 호출합니다.
+이 저장소를 fork하고 `main`에 push하면 운영진의 reusable workflow가 원본 빌드 설정과 테스트에 학생의 `src/main`만 결합해 채점합니다.
 
-- `JUDGE_URL`: 채점 서버 주소
-- `ASSIGNMENT`: upstream 과제 tag (예: `assignment-1-v1`)
+별도의 GitHub Actions variable이나 secret 설정은 필요하지 않습니다.

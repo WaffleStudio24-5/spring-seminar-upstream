@@ -6,40 +6,9 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   grade:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Request grading
-        env:
-          ASSIGNMENT: ${{ vars.ASSIGNMENT }}
-          COMMIT_SHA: ${{ github.sha }}
-          JUDGE_URL: ${{ vars.JUDGE_URL }}
-          OIDC_AUDIENCE: seminar-judge
-          REPOSITORY: https://github.com/${{ github.repository }}.git
-        run: |
-          set -euo pipefail
-          : "${ASSIGNMENT:?Set the ASSIGNMENT Actions variable}"
-          : "${JUDGE_URL:?Set the JUDGE_URL Actions variable}"
-
-          oidc_response=$(curl --fail-with-body --silent --show-error \
-            --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}")
-          oidc_token=$(jq --exit-status --raw-output '.value' <<<"$oidc_response")
-
-          request=$(jq --null-input \
-            --arg repository "$REPOSITORY" \
-            --arg commit "$COMMIT_SHA" \
-            --arg assignment "$ASSIGNMENT" \
-            '{repository: $repository, commit: $commit, assignment: $assignment}')
-          response=$(curl --fail-with-body --silent --show-error \
-            --request POST "${JUDGE_URL%/}/gradings" \
-            --header "Authorization: Bearer ${oidc_token}" \
-            --header "Content-Type: application/json" \
-            --data "$request")
-
-          jq . <<<"$response"
-          test "$(jq --raw-output '.status' <<<"$response")" = "PASSED"
+    uses: WaffleStudio24-5/spring-seminar-judge/.github/workflows/grade.yml@main
+    with:
+      assignment: main
