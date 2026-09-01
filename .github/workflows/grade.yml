@@ -6,9 +6,11 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   grade:
     uses: WaffleStudio24-5/spring-seminar-judge/.github/workflows/grade.yml@main
     with:
       assignment: main
+      assignment_sha: af730b224a94ec2540d2e51f95cbd3d0b92e3b6f
