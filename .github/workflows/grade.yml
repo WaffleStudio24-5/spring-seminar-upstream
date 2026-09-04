@@ -13,4 +13,4 @@ jobs:
     uses: WaffleStudio24-5/spring-seminar-judge/.github/workflows/grade.yml@main
     with:
       assignment: main
-      assignment_sha: af730b224a94ec2540d2e51f95cbd3d0b92e3b6f
+      assignment_sha: f678c828863f9aa8e94c8c93caba78907e7d456f
