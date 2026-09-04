@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   grade:
+    if: github.repository != 'WaffleStudio24-5/spring-seminar-upstream'
     uses: WaffleStudio24-5/spring-seminar-judge/.github/workflows/grade.yml@main
     with:
       assignment: main
