@@ -13,5 +13,4 @@ jobs:
     if: github.repository != 'WaffleStudio24-5/spring-seminar-upstream'
     uses: WaffleStudio24-5/spring-seminar-judge/.github/workflows/grade.yml@main
     with:
-      assignment: main
-      assignment_sha: f678c828863f9aa8e94c8c93caba78907e7d456f
+      result_url: https://spring-seminar-judge.vercel.app/api
