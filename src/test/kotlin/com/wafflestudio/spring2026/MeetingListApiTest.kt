@@ -1,22 +1,15 @@
 package com.wafflestudio.spring2026
 
+import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import org.hamcrest.Matchers.containsInAnyOrder
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import kotlin.test.Test
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class MeetingListApiTest(
-    @Autowired private val mockMvc: MockMvc,
-) {
+class MeetingListApiTest : ApiIntegrationTest() {
     @Test
     fun `returns an empty array when no meetings exist`() {
         mockMvc.get("/meetings").andExpect {

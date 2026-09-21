@@ -1,19 +1,12 @@
 package com.wafflestudio.spring2026
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import kotlin.test.Test
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class MeetingApiTest(
-    @Autowired private val mockMvc: MockMvc,
-) {
+class MeetingApiTest : ApiIntegrationTest() {
     @Test
     fun `creates and retrieves a meeting`() {
         val location = mockMvc.post("/meetings") {
