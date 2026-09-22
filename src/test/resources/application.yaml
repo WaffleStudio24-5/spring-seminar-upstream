@@ -5,3 +5,7 @@ spring:
   datasource:
     url: jdbc:tc:mysql:8.4:///seminar
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    # 컨테이너가 스스로 만드는 계정이라 드라이버가 이 값을 쓰지는 않는다.
+    # data_access 예제가 DriverManager 로 직접 접속할 때 필요해서 적어 둔다.
+    username: test
+    password: test
