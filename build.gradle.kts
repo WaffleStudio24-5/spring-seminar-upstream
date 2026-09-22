@@ -31,6 +31,12 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+springBoot {
+    // 예제 파일마다 fun main() 이 있어서 부트가 진입점을 하나로 고르지 못한다.
+    // 서버의 진입점을 못박아 두면 예제를 몇 개를 더 넣어도 bootRun/bootJar 이 그대로 돈다.
+    mainClass.set("com.wafflestudio.spring2026.SeminarApplicationKt")
+}
+
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
