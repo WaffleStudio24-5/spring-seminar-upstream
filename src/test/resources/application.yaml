@@ -1,0 +1,7 @@
+# 테스트는 Testcontainers 가 띄운 일회용 MySQL 을 쓴다.
+# jdbc:tc: 로 시작하는 URL 을 주면 드라이버가 컨테이너를 알아서 띄우고 지운다.
+# (도커가 켜져 있어야 한다.)
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.4:///seminar
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver

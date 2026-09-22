@@ -1,0 +1,21 @@
+# 수업용 로컬 MySQL. 조원 모두 같은 종류와 버전을 쓰기 위해 직접 설치하지 않고 도커로 띄운다.
+#   docker compose up -d
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: seminar-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: seminar
+      MYSQL_USER: seminar
+      MYSQL_PASSWORD: seminar
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

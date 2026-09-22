@@ -1,6 +1,14 @@
 spring:
   application:
     name: seminar
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/seminar?characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:seminar}
+    password: ${SPRING_DATASOURCE_PASSWORD:seminar}
+  flyway:
+    # 애플리케이션이 뜰 때 db/migration 의 V{n}__*.sql 을 버전 순서대로 실행한다.
+    enabled: true
+    locations: classpath:db/migration
 
 server:
   port: 8080
