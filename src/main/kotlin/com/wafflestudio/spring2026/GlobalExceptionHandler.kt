@@ -1,7 +1,5 @@
 package com.wafflestudio.spring2026
 
-import com.wafflestudio.spring2026.meeting.MeetingNotFoundException
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -29,14 +27,12 @@ class GlobalExceptionHandler {
         )
     }
 
-    @ExceptionHandler(MeetingNotFoundException::class)
-    fun handleMeetingNotFound(
-        exception: MeetingNotFoundException,
+    /** 상태 코드와 오류 코드는 예외가 들고 있다. 예외 종류가 늘어도 이 메서드 하나로 끝난다. */
+    @ExceptionHandler(ApiException::class)
+    fun handleApiException(
+        exception: ApiException,
     ): ResponseEntity<ApiErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-            ApiErrorResponse(
-                code = "MEETING_NOT_FOUND",
-                message = exception.message ?: "모임을 찾을 수 없습니다.",
-            ),
+        ResponseEntity.status(exception.status).body(
+            ApiErrorResponse(code = exception.code, message = exception.message),
         )
 }
