@@ -1,42 +1,31 @@
 package com.wafflestudio.spring2026.di
 
 fun main() {
-    // 미리 객체를 생성하고, 의존성을 주입해야 합니다.
+    /**
+     * 서버 셋팅 :
+     * 미리 객체를 생성하고, 의존성을 주입해야 합니다.
+     */
+
     val meetingRepository = ExampleMeetingRepository()
     val meetingService = ExampleMeetingService(meetingRepository)
     val meetingController = ExampleMeetingController(meetingService)
 
-    // API 요청이 다음 순서대로 온다고 해봅시다.
-    // POST /meetings
+
+    /*
+     * API 요청과 처리
+     *
+     * */
+
+    // 1. POST /meetings
     val springStudy = meetingController.createMeeting(
         title = "Spring Study",
         capacity = 10,
     )
 
-    // POST /meetings
-    val kotlinStudy = meetingController.createMeeting(
-        title = "Kotlin Study",
-        capacity = 8,
-    )
-
-    // GET /meetings
+    // 2. GET /meetings
     meetingController.getMeetingList()
 
-    // GET /meetings/{id}
-    meetingController.getMeeting(springStudy.id)
 
-    // PATCH /meetings/{id}
-    meetingController.patchMeeting(
-        id = kotlinStudy.id,
-        title = "Advanced Kotlin Study",
-        capacity = 12,
-    )
-
-    // DELETE /meetings/{id}
-    meetingController.deleteMeeting(springStudy.id)
-
-    // GET /meetings
-    meetingController.getMeetingList()
 }
 
 class ExampleMeetingController(
