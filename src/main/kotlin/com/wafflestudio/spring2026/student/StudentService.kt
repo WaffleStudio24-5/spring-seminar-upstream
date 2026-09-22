@@ -20,6 +20,7 @@ class StudentService(
         age: Int,
         email: String,
         seminarId: Long,
+        phone: String?,
     ): Student {
         seminarService.getSeminar(seminarId)
 
@@ -27,7 +28,9 @@ class StudentService(
             throw EmailAlreadyExistsException(email)
         }
 
-        return studentRepository.save(Student(name = name, age = age, email = email, seminarId = seminarId))
+        return studentRepository.save(
+            Student(name = name, age = age, email = email, seminarId = seminarId, phone = phone),
+        )
     }
 
     fun getStudent(id: Long): Student = studentRepository.findByIdOrNull(id) ?: throw StudentNotFoundException(id)

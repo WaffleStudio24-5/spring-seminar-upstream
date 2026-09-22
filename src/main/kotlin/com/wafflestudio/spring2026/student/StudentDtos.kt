@@ -12,6 +12,7 @@ data class StudentCreateRequest(
     @field:Email(message = "이메일 형식이 아닙니다.")
     val email: String,
     val seminarId: Long,
+    val phone: String? = null,
 )
 
 data class StudentResponse(
@@ -20,6 +21,7 @@ data class StudentResponse(
     val age: Int,
     val email: String,
     val seminarId: Long,
+    val phone: String?,
 ) {
     companion object {
         fun from(student: Student): StudentResponse =
@@ -29,6 +31,7 @@ data class StudentResponse(
                 age = student.age,
                 email = student.email,
                 seminarId = student.seminarId,
+                phone = student.phone,
             )
     }
 }

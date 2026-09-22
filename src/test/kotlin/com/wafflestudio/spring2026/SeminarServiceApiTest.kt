@@ -59,6 +59,37 @@ class SeminarServiceApiTest(
     }
 
     @Test
+    fun `V2 에서 더한 전화번호는 넣어도 되고 빼도 된다`() {
+        val seminarId = createSeminar("Kotlin 세미나")
+
+        // V2 이전에 등록한 학생처럼 전화번호가 없는 경우
+        val withoutPhone = createStudent(seminarId)
+        mockMvc.get("/students/$withoutPhone").andExpect {
+            status { isOk() }
+            jsonPath("$.phone") { value(null) }
+        }
+
+        val email = uniqueEmail()
+        val withPhone = idOf(
+            mockMvc.post("/students") {
+                json(
+                    mapOf(
+                        "name" to "김와플",
+                        "age" to 22,
+                        "email" to email,
+                        "seminarId" to seminarId,
+                        "phone" to "010-1234-5678",
+                    ),
+                )
+            }.andExpect { status { isCreated() } },
+        )
+        mockMvc.get("/students/$withPhone").andExpect {
+            status { isOk() }
+            jsonPath("$.phone") { value("010-1234-5678") }
+        }
+    }
+
+    @Test
     fun `학생은 자신이 속하지 않은 세미나의 모임에는 참여할 수 없다`() {
         val mySeminarId = createSeminar("Frontend 세미나")
         val otherSeminarId = createSeminar("FastAPI 세미나")

@@ -20,7 +20,13 @@ class StudentController(
         @Valid @RequestBody request: StudentCreateRequest,
     ): ResponseEntity<StudentResponse> {
         val student =
-            studentService.createStudent(request.name, request.age, request.email, request.seminarId)
+            studentService.createStudent(
+                name = request.name,
+                age = request.age,
+                email = request.email,
+                seminarId = request.seminarId,
+                phone = request.phone,
+            )
 
         return ResponseEntity
             .created(URI.create("/students/${student.requireId()}"))
