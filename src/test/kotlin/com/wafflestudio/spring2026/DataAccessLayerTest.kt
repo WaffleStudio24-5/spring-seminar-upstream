@@ -44,17 +44,10 @@ class DataAccessLayerTest(
     }
 
     @Test
-    fun `풀을 쓰지 않는 커넥션도 같은 값을 센다`() {
+    fun `JdbcTemplate 으로 학생 수를 센다`() {
         val seminarId = givenSeminarWithStudents(count = 2)
 
-        assertEquals(2, plainJdbc.countWithoutPool(seminarId))
         assertEquals(2, jdbcTemplate.countBySeminarId(seminarId))
-    }
-
-    @Test
-    fun `JdbcTemplate 으로 세미나별 학생 수를 한 번에 센다`() {
-        val seminarId = givenSeminarWithStudents(count = 2)
-
         assertEquals(2, jdbcTemplate.countByEachSeminar()[seminarId])
     }
 

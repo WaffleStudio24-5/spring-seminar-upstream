@@ -13,13 +13,7 @@ interface ParticipationRepository : CrudRepository<Participation, Long> {
 
     fun countByMeetingId(meetingId: Long): Int
 
-    /**
-     * 메서드 이름으로는 만들 수 없는 쿼리는 `@Query` 에 SQL 을 직접 쓴다.
-     *
-     * 참여자 목록을 얻으려면 participations 에서 학생 ID 를 꺼내 students 를 다시 읽어야 하는데,
-     * 두 번 나눠 읽는 대신 JOIN 으로 한 번에 가져온다.
-     * `SELECT s.*` 로 students 의 칼럼만 고르면 결과가 [Student] 로 그대로 매핑된다.
-     */
+    /** JOIN 은 메서드 이름으로 표현할 수 없다. 이럴 때 `@Query` 에 SQL 을 직접 쓴다. */
     @Query(
         """
         SELECT s.*
