@@ -3,7 +3,6 @@ package com.wafflestudio.spring2026.participation
 import com.wafflestudio.spring2026.ApiException
 import org.springframework.http.HttpStatus
 
-/** 학생은 자신이 속하지 않은 세미나의 모임에는 참여할 수 없다. */
 class NotInSameSeminarException(studentId: Long, meetingId: Long) :
     ApiException(
         HttpStatus.CONFLICT,

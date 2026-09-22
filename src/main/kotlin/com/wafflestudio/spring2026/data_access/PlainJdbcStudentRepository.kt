@@ -5,12 +5,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Repository
 import java.sql.DriverManager
 
-/**
- * 1층. 순수 JDBC — 자바가 RDB 와 통신하는 표준 API.
- *
- * 커넥션을 열고, 쿼리하고, ResultSet 을 객체로 옮기고, 닫는다. 전부 직접 한다.
- * `use` 는 블록을 벗어날 때 `close()` 를 불러 준다.
- */
 @Repository
 class PlainJdbcStudentRepository(
     @Value("\${spring.datasource.url}") private val url: String,

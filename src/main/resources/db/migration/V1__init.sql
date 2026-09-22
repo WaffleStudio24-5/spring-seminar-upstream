@@ -1,11 +1,4 @@
 -- 수업 Practice 1 에서 설계한 테이블.
---
---   seminars ─┬─< students        한 세미나에 여러 학생, 학생은 세미나 하나만
---             └─< meetings        한 세미나에 여러 모임
---   students >─ participations ─< meetings   학생 N : 모임 M (중간 테이블)
---
--- 다대다는 테이블로 바로 표현할 수 없어서 participations 를 두고
--- 일대다 + 다대일 두 개로 바꾸어 표현한다.
 
 CREATE TABLE seminars
 (

@@ -4,7 +4,6 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 
-/** 세미나가 여는 모임. 한 세미나에 여러 개가 있을 수 있다. */
 @Table("meetings")
 data class Meeting(
     @Id

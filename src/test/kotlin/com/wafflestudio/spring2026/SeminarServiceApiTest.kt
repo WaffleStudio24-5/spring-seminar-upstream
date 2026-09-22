@@ -14,12 +14,6 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.test.Test
 
-/**
- * 수업 요구사항이 실제로 지켜지는지 확인한다.
- *
- * DB 는 Testcontainers 가 띄운 일회용 MySQL 이다. (`src/test/resources/application.yaml`)
- * 테스트끼리 데이터를 공유하므로, 각 테스트는 자기가 쓸 세미나와 학생을 직접 만든다.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 class SeminarServiceApiTest(
@@ -157,8 +151,6 @@ class SeminarServiceApiTest(
             jsonPath("$.code") { value("INVALID_REQUEST") }
         }
     }
-
-    /* 준비용 헬퍼 ------------------------------------------------------ */
 
     private fun createSeminar(title: String): Long =
         idOf(

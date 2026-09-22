@@ -5,11 +5,6 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
 
-/**
- * 2층. Spring JDBC — 커넥션과 자원 정리, 예외 변환을 [JdbcTemplate] 이 대신한다.
- *
- * 남는 것은 SQL 과, 한 줄을 객체로 옮기는 [RowMapper] 뿐이다.
- */
 @Repository
 class JdbcTemplateStudentRepository(
     private val jdbcTemplate: JdbcTemplate,

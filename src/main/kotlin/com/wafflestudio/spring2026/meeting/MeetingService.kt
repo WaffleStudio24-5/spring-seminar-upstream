@@ -58,13 +58,7 @@ class MeetingService(
         return participationRepository.findParticipantsByMeetingId(meetingId)
     }
 
-    /**
-     * 학생이 모임에 참여한다.
-     *
-     * 요구사항의 핵심 규칙이 여기에 있다 —
-     * **학생은 자신이 속하지 않은 세미나의 모임에는 참여할 수 없다.**
-     * 이건 FK 로는 표현할 수 없어서(두 FK 가 서로 다른 테이블을 가리킨다) 코드가 확인한다.
-     */
+    /** 학생은 자신이 속하지 않은 세미나의 모임에는 참여할 수 없다. */
     @Transactional
     fun join(
         meetingId: Long,

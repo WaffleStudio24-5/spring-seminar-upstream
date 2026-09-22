@@ -13,15 +13,6 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * 세 계층이 같은 결과를 낸다는 것을 확인한다.
- *
- * 순수 JDBC / JdbcTemplate / Spring Data JDBC 는 같은 SQL 로 내려간다.
- * 다른 것은 그 SQL 을 누가 쓰고, ResultSet 을 누가 객체로 옮기느냐뿐이다.
- *
- * 테스트 클래스들이 컨테이너 하나를 함께 쓰므로, 여기서 만드는 이메일은
- * 다른 테스트가 만드는 것과 겹치지 않아야 한다. 그래서 접두사를 따로 둔다.
- */
 @SpringBootTest
 class DataAccessLayerTest(
     @Autowired private val plainJdbc: PlainJdbcStudentRepository,

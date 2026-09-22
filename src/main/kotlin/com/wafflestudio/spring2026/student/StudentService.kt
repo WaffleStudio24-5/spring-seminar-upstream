@@ -9,12 +9,6 @@ class StudentService(
     private val studentRepository: StudentRepository,
     private val seminarService: SeminarService,
 ) {
-    /**
-     * 학생은 반드시 세미나 하나에 속한다.
-     *
-     * 없는 세미나를 가리키면 DB 의 FK 제약이 막아 주지만,
-     * 그 전에 확인해서 "세미나를 찾을 수 없다"는 쓸 만한 메시지를 돌려준다.
-     */
     fun createStudent(
         name: String,
         age: Int,
