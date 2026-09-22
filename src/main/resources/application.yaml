@@ -1,6 +1,14 @@
 spring:
   application:
     name: seminar
+  datasource:
+    # compose.yaml 이 띄우는 MySQL. docker compose up -d 로 먼저 켜 둔다.
+    url: jdbc:mysql://localhost:3306/waggle?characterEncoding=UTF-8
+    username: waggle
+    password: waggle
+  flyway:
+    # 애플리케이션이 뜰 때 db/migration 의 V{n}__*.sql 을 버전 순서대로 실행한다.
+    locations: classpath:db/migration
 
 server:
   port: 8080
