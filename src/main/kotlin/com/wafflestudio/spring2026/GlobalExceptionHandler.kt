@@ -1,5 +1,7 @@
 package com.wafflestudio.spring2026
 
+import com.wafflestudio.spring2026.auth.EmailAlreadyExistsException
+import com.wafflestudio.spring2026.auth.InvalidCredentialsException
 import com.wafflestudio.spring2026.meeting.MeetingNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -37,6 +39,28 @@ class GlobalExceptionHandler {
             ApiErrorResponse(
                 code = "MEETING_NOT_FOUND",
                 message = exception.message ?: "모임을 찾을 수 없습니다.",
+            ),
+        )
+
+    @ExceptionHandler(EmailAlreadyExistsException::class)
+    fun handleEmailAlreadyExists(
+        exception: EmailAlreadyExistsException,
+    ): ResponseEntity<ApiErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ApiErrorResponse(
+                code = "EMAIL_ALREADY_EXISTS",
+                message = exception.message ?: "이미 가입된 이메일입니다.",
+            ),
+        )
+
+    @ExceptionHandler(InvalidCredentialsException::class)
+    fun handleInvalidCredentials(
+        exception: InvalidCredentialsException,
+    ): ResponseEntity<ApiErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ApiErrorResponse(
+                code = "INVALID_CREDENTIALS",
+                message = exception.message ?: "이메일 또는 비밀번호가 올바르지 않습니다.",
             ),
         )
 }
