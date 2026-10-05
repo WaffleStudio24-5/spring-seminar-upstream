@@ -69,4 +69,42 @@ class SessionScheduleApiTest : ApiIntegrationTest() {
             status { isNotFound() }
         }
     }
+
+    @Test
+    fun `회차 수정 요청이 유효하지 않으면 400, 없는 회차는 404를 반환한다`() {
+        val seminarId = createSeminar()
+        val sessionId = createSession(seminarId)
+        val admin = adminToken()
+
+        patchAs(admin, "/sessions/$sessionId", """{"title":"   "}""").andExpect { status { isBadRequest() } }
+        patchAs(admin, "/sessions/$sessionId", """{"location":""}""").andExpect { status { isBadRequest() } }
+        patchAs(admin, "/sessions/$sessionId", """{"assignmentTitle":" "}""").andExpect { status { isBadRequest() } }
+
+        patchAs(admin, "/sessions/999999", mapOf("title" to "Updated title")).andExpect { status { isNotFound() } }
+    }
+
+    @Test
+    fun `회차의 시작 시각을 바꾸면 회차 번호가 다시 매겨진다`() {
+        val seminarId = createSeminar()
+        val current = now()
+        val firstId = createSession(seminarId, startsAt = current.plusDays(1), title = "First session")
+        val secondId = createSession(seminarId, startsAt = current.plusDays(2), title = "Second session")
+        val admin = adminToken()
+
+        patchAs(admin, "/sessions/$firstId", mapOf("startsAt" to current.plusDays(3).toString())).andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(firstId) }
+            jsonPath("$.round") { value(2) }
+            // 보내지 않은 항목은 그대로다.
+            jsonPath("$.title") { value("First session") }
+        }
+
+        getAs(admin, "/seminars/$seminarId/sessions").andExpect {
+            status { isOk() }
+            jsonPath("$[0].id") { value(secondId) }
+            jsonPath("$[0].round") { value(1) }
+            jsonPath("$[1].id") { value(firstId) }
+            jsonPath("$[1].round") { value(2) }
+        }
+    }
 }

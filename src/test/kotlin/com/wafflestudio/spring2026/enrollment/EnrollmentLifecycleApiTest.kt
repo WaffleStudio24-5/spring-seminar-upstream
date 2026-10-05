@@ -82,4 +82,45 @@ class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
             status { isNotFound() }
         }
     }
+
+    @Test
+    fun `내 수강 목록은 페이지 단위로 신청한 세미나의 정보를 보여 준다`() {
+        val seminarId = createSeminar(title = unique("Mine"), capacity = 5, totalGraceDays = 2)
+        val rookie = approvedRookie()
+
+        // 신청이 없으면 빈 목록이고 전체 페이지 수는 0 이다.
+        getAs(rookie.token, "/users/me/enrollments").andExpect {
+            status { isOk() }
+            jsonPath("$.content.length()") { value(0) }
+            jsonPath("$.page") { value(0) }
+            jsonPath("$.size") { value(20) }
+            jsonPath("$.totalElements") { value(0) }
+            jsonPath("$.totalPages") { value(0) }
+        }
+
+        val enrollmentId = responseId(enroll(seminarId, rookie.token).andExpect { status { isCreated() } })
+
+        getAs(rookie.token, "/users/me/enrollments?page=0&size=5").andExpect {
+            status { isOk() }
+            jsonPath("$.size") { value(5) }
+            jsonPath("$.totalElements") { value(1) }
+            jsonPath("$.totalPages") { value(1) }
+            jsonPath("$.content[0].id") { value(enrollmentId) }
+            jsonPath("$.content[0].seminar.id") { value(seminarId) }
+            jsonPath("$.content[0].seminar.status") { value("OPEN") }
+            jsonPath("$.content[0].seminar.capacity") { value(5) }
+            jsonPath("$.content[0].seminar.enrolledCount") { value(1) }
+            jsonPath("$.content[0].seminar.applyStartAt") { exists() }
+            jsonPath("$.content[0].seminar.applyEndAt") { exists() }
+            jsonPath("$.content[0].graceDaysRemaining") { value(2) }
+            jsonPath("$.content[0].dropped") { value(false) }
+            jsonPath("$.content[0].createdAt") { exists() }
+        }
+
+        // 취소한 신청은 목록에서 빠진다.
+        cancelEnrollment(seminarId, rookie.token).andExpect { status { isNoContent() } }
+        getAs(rookie.token, "/users/me/enrollments").andExpect {
+            jsonPath("$.totalElements") { value(0) }
+        }
+    }
 }

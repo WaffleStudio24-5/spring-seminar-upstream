@@ -7,7 +7,10 @@ import org.springframework.http.HttpHeaders
 import org.springframework.test.web.servlet.get
 import java.time.Instant
 import java.util.Date
+import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AuthenticationApiTest : ApiIntegrationTest() {
     @Test
@@ -53,6 +56,10 @@ class AuthenticationApiTest : ApiIntegrationTest() {
         }
 
         loginRequest(email, "   ").andExpect {
+            status { isBadRequest() }
+        }
+
+        loginRequest("   ", PASSWORD).andExpect {
             status { isBadRequest() }
         }
     }
@@ -104,6 +111,68 @@ class AuthenticationApiTest : ApiIntegrationTest() {
             .compact()
         getAs(forged, "/users/me").andExpect { status { isUnauthorized() } }
         postAs(forged, "/seminars", mapOf("title" to "Forged")).andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `발급한 토큰에는 sub, iat, exp 가 있고 1시간 뒤 만료된다`() {
+        val email = uniqueEmail()
+        val userId = signupRookie(email)
+
+        val payload = payloadOf(login(email))
+
+        assertEquals(userId.toString(), payload.path("sub").asString(), "sub 는 사용자 ID 문자열이어야 합니다.")
+        assertTrue(payload.path("iat").isIntegralNumber, "iat 는 초 단위 Unix 시각(정수)이어야 합니다.")
+        assertTrue(payload.path("exp").isIntegralNumber, "exp 는 초 단위 Unix 시각(정수)이어야 합니다.")
+
+        val issuedAt = payload.path("iat").asLong()
+        assertTrue(abs(issuedAt - Instant.now().epochSecond) < 60, "iat 는 발급한 시각이어야 합니다. (iat=$issuedAt)")
+        assertEquals(3600, payload.path("exp").asLong() - issuedAt, "토큰은 발급 후 1시간(3600초) 뒤 만료되어야 합니다.")
+    }
+
+    @Test
+    fun `만료된 토큰은 401을 반환한다`() {
+        val rookie = approvedRookie()
+        val now = Instant.now()
+
+        // 서버가 발급한 토큰과 클레임이 같고 시각만 다른 토큰을 jwt.secret 으로 서명해 만든다.
+        // 아직 유효한 토큰은 통과해야 한다. 그래야 아래의 401 이 서명이 아니라 만료 때문임이 보장된다.
+        val stillValid = resign(rookie.token, issuedAt = now.minusSeconds(60), expiresAt = now.plusSeconds(3540))
+        getAs(stillValid, "/users/me").andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(rookie.id) }
+        }
+
+        val expired = resign(rookie.token, issuedAt = now.minusSeconds(7200), expiresAt = now.minusSeconds(3600))
+        getAs(expired, "/users/me").andExpect { status { isUnauthorized() } }
+        getAs(expired, "/users/me/enrollments").andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `로그아웃한 토큰은 더 이상 쓸 수 없다`() {
+        // 로그아웃은 이 테스트에서만 쓰는 사용자로 한다. 다른 테스트가 쓰는 토큰을 무효화하지 않기 위해서다.
+        val seminarId = createSeminar()
+        val rookie = approvedRookie()
+        getAs(rookie.token, "/users/me").andExpect { status { isOk() } }
+
+        logout(rookie.token).andExpect {
+            status { isNoContent() }
+        }
+
+        getAs(rookie.token, "/users/me").andExpect { status { isUnauthorized() } }
+        getAs(rookie.token, "/seminars/$seminarId").andExpect { status { isUnauthorized() } }
+        enroll(seminarId, rookie.token).andExpect { status { isUnauthorized() } }
+        // 같은 토큰으로 다시 로그아웃해도 무효화된 토큰이므로 401 이다.
+        logout(rookie.token).andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `가입 승인 전이어도 로그아웃할 수 있고, 토큰 없는 로그아웃은 401을 반환한다`() {
+        val pending = pendingRookie()
+        logout(pending.token).andExpect { status { isNoContent() } }
+        getAs(pending.token, "/users/me").andExpect { status { isUnauthorized() } }
+
+        logout(null).andExpect { status { isUnauthorized() } }
+        logout("not-a-jwt").andExpect { status { isUnauthorized() } }
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.wafflestudio.spring2026.user
 
 import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class UserApprovalApiTest : ApiIntegrationTest() {
     @Test
@@ -100,5 +101,48 @@ class UserApprovalApiTest : ApiIntegrationTest() {
         approve(approvedUserId, "REJECTED", admin).andExpect {
             status { isConflict() }
         }
+    }
+
+    @Test
+    fun `가입 신청 목록의 status 나 role 이 정해진 값이 아니면 400을 반환한다`() {
+        val admin = adminToken()
+
+        getAs(admin, "/users?status=UNKNOWN").andExpect { status { isBadRequest() } }
+        getAs(admin, "/users?role=ADMIN").andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `가입 신청 목록은 상태로 거르고 최근 가입 순으로 보여 주며 와장은 나오지 않는다`() {
+        val admin = adminToken()
+        val olderId = signupRookie()
+        val newerId = signupRookie()
+        val approvedId = signupRookie()
+        approve(approvedId, token = admin).andExpect { status { isOk() } }
+
+        // 최근에 가입한 순서. 방금 가입한 두 대기 루키가 맨 앞에 온다.
+        val pendingBody = getAs(admin, "/users?status=PENDING&role=ROOKIE&size=100").andExpect {
+            status { isOk() }
+            jsonPath("$.content[0].id") { value(newerId) }
+            jsonPath("$.content[1].id") { value(olderId) }
+        }.andReturn().response.contentAsString
+        val pending = objectMapper.readTree(pendingBody).path("content").toList()
+        assertTrue(pending.all { it.path("status").asString() == "PENDING" }, "status=PENDING 이면 대기 중인 신청만 보여야 합니다.")
+        assertTrue(pending.none { it.path("id").asLong() == approvedId })
+
+        // 와장은 승인된 사용자이지만 가입 신청이 아니므로 어느 페이지에도 나오지 않는다.
+        var page = 0
+        val approvedIds = mutableListOf<Long>()
+        while (true) {
+            val body = getAs(admin, "/users?status=APPROVED&size=100&page=$page").andExpect {
+                status { isOk() }
+            }.andReturn().response.contentAsString
+            val content = objectMapper.readTree(body).path("content").toList()
+            if (content.isEmpty()) break
+            assertTrue(content.none { it.path("email").asString() == ADMIN_EMAIL }, "와장 계정은 가입 신청 목록에 나오지 않아야 합니다.")
+            assertTrue(content.none { it.path("role").asString() == "ADMIN" })
+            approvedIds += content.map { it.path("id").asLong() }
+            page++
+        }
+        assertTrue(approvedId in approvedIds)
     }
 }

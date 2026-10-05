@@ -1,5 +1,8 @@
 package com.wafflestudio.spring2026.support
 
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.security.Keys
+import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -16,8 +19,11 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MySQLContainer
+import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.util.Base64
+import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 
 @SpringBootTest
@@ -45,12 +51,19 @@ abstract class ApiIntegrationTest {
         /** 테스트가 가입시키는 사용자의 비밀번호 */
         const val PASSWORD = "password"
 
+        /**
+         * 테스트 동안 서버가 쓰는 JWT 서명 키. (docs/3주차 과제.md 의 "JWT Access Token")
+         * 서버와 같은 키를 알아야 만료된 토큰처럼 로그인으로는 받을 수 없는 토큰을 직접 만들 수 있다.
+         */
+        const val TEST_JWT_SECRET = "waggle-test-jwt-secret-0123456789abcdef"
+
         @JvmStatic
         @DynamicPropertySource
         fun mysqlProperties(registry: DynamicPropertyRegistry) {
             registry.add("spring.datasource.url", mysql::getJdbcUrl)
             registry.add("spring.datasource.username", mysql::getUsername)
             registry.add("spring.datasource.password", mysql::getPassword)
+            registry.add("jwt.secret") { TEST_JWT_SECRET }
         }
     }
 
@@ -87,6 +100,32 @@ abstract class ApiIntegrationTest {
     }
 
     protected fun adminToken(): String = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    protected fun logout(token: String?): ResultActionsDsl = postAs(token, "/auth/logout")
+
+    /** 토큰의 페이로드. 서명과 달리 페이로드는 키 없이 base64url 디코딩만으로 읽을 수 있다. */
+    protected fun payloadOf(token: String): JsonNode =
+        objectMapper.readTree(Base64.getUrlDecoder().decode(token.split(".")[1]))
+
+    /**
+     * 서버가 발급한 [token] 의 클레임을 그대로 두고 발급·만료 시각만 바꿔, 테스트용 키로 다시 서명한다.
+     * 팀이 더한 클레임(`jti` 등)도 그대로 남으므로 시각 외에는 서버가 발급한 토큰과 같다.
+     */
+    protected fun resign(
+        token: String,
+        issuedAt: Instant,
+        expiresAt: Instant,
+    ): String {
+        @Suppress("UNCHECKED_CAST")
+        val claims = objectMapper.convertValue(payloadOf(token), Map::class.java) as Map<String, Any?>
+
+        return Jwts.builder()
+            .claims(claims)
+            .issuedAt(Date.from(issuedAt))
+            .expiration(Date.from(expiresAt))
+            .signWith(Keys.hmacShaKeyFor(TEST_JWT_SECRET.toByteArray()), Jwts.SIG.HS256)
+            .compact()
+    }
 
     protected fun MockHttpServletRequestDsl.bearer(token: String) {
         header(HttpHeaders.AUTHORIZATION, "Bearer $token")

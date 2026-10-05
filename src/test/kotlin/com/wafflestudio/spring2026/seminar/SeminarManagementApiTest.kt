@@ -75,4 +75,33 @@ class SeminarManagementApiTest : ApiIntegrationTest() {
             status { isNotFound() }
         }
     }
+
+    @Test
+    fun `신청 기간 전이면 BEFORE, 신청 기간이 끝났으면 CLOSED 다`() {
+        val admin = adminToken()
+        val beforeId = createSeminar(applyStartAt = now().plusDays(1), applyEndAt = now().plusDays(2))
+        val endedId = createSeminar(applyStartAt = now().minusDays(2), applyEndAt = now().minusDays(1))
+
+        getAs(admin, "/seminars/$beforeId").andExpect { jsonPath("$.status") { value("BEFORE") } }
+        getAs(admin, "/seminars/$endedId").andExpect { jsonPath("$.status") { value("CLOSED") } }
+    }
+
+    @Test
+    fun `세미나 목록은 신청 상태로 거를 수 있고, 정해지지 않은 상태는 400을 반환한다`() {
+        val keyword = unique("Filter")
+        val openId = createSeminar(title = "$keyword open")
+        val beforeId = createSeminar(title = "$keyword before", applyStartAt = now().plusDays(1), applyEndAt = now().plusDays(2))
+        val closedId = createSeminar(title = "$keyword closed", applyStartAt = now().minusDays(2), applyEndAt = now().minusDays(1))
+
+        for ((status, id) in listOf("OPEN" to openId, "BEFORE" to beforeId, "CLOSED" to closedId)) {
+            getAs(null, "/seminars?keyword=$keyword&status=$status").andExpect {
+                status { isOk() }
+                jsonPath("$.totalElements") { value(1) }
+                jsonPath("$.content[0].id") { value(id) }
+                jsonPath("$.content[0].status") { value(status) }
+            }
+        }
+
+        getAs(null, "/seminars?status=UNKNOWN").andExpect { status { isBadRequest() } }
+    }
 }

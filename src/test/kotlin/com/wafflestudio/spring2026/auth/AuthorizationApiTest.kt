@@ -187,4 +187,45 @@ class AuthorizationApiTest : ApiIntegrationTest() {
             jsonPath("$.content[1].seminar.id") { value(firstSeminarId) }
         }
     }
+
+    @Test
+    fun `반려된 사용자도 사용자 조회와 내 수강 목록에서 403을 반환한다`() {
+        val other = approvedRookie()
+        val rejected = rejectedRookie()
+
+        getAs(rejected.token, "/users/${other.id}").andExpect { status { isForbidden() } }
+        getAs(rejected.token, "/users/${rejected.id}").andExpect { status { isForbidden() } }
+        getAs(rejected.token, "/users/me/enrollments").andExpect { status { isForbidden() } }
+    }
+
+    @Test
+    fun `승인 전의 담당 운영진은 회차를 수정할 수 없다`() {
+        val seminarId = createSeminar()
+        val sessionId = createSession(seminarId)
+        val pendingStaff = pendingStaff(seminarId)
+
+        patchAs(pendingStaff.token, "/sessions/$sessionId", mapOf("title" to "Pending staff")).andExpect { status { isForbidden() } }
+    }
+
+    @Test
+    fun `승인된 사용자는 역할과 관계없이 다른 사용자와 세미나를 조회할 수 있다`() {
+        val seminarId = createSeminar()
+        val staff = approvedStaff(seminarId)
+        val rookie = approvedRookie()
+
+        getAs(rookie.token, "/users/${staff.id}").andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(staff.id) }
+            jsonPath("$.role") { value("STAFF") }
+            jsonPath("$.seminarId") { value(seminarId) }
+        }
+        getAs(staff.token, "/users/${rookie.id}").andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(rookie.id) }
+        }
+        getAs(staff.token, "/seminars/$seminarId").andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(seminarId) }
+        }
+    }
 }
