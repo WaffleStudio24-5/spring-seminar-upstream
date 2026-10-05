@@ -119,7 +119,6 @@ class UserApprovalApiTest : ApiIntegrationTest() {
         val approvedId = signupRookie()
         approve(approvedId, token = admin).andExpect { status { isOk() } }
 
-        // 최근에 가입한 순서. 방금 가입한 두 대기 루키가 맨 앞에 온다.
         val pendingBody = getAs(admin, "/users?status=PENDING&role=ROOKIE&size=100").andExpect {
             status { isOk() }
             jsonPath("$.content[0].id") { value(newerId) }
@@ -129,7 +128,6 @@ class UserApprovalApiTest : ApiIntegrationTest() {
         assertTrue(pending.all { it.path("status").asString() == "PENDING" }, "status=PENDING 이면 대기 중인 신청만 보여야 합니다.")
         assertTrue(pending.none { it.path("id").asLong() == approvedId })
 
-        // 와장은 승인된 사용자이지만 가입 신청이 아니므로 어느 페이지에도 나오지 않는다.
         var page = 0
         val approvedIds = mutableListOf<Long>()
         while (true) {

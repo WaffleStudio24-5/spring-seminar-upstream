@@ -95,7 +95,6 @@ class SessionScheduleApiTest : ApiIntegrationTest() {
             status { isOk() }
             jsonPath("$.id") { value(firstId) }
             jsonPath("$.round") { value(2) }
-            // 보내지 않은 항목은 그대로다.
             jsonPath("$.title") { value("First session") }
         }
 

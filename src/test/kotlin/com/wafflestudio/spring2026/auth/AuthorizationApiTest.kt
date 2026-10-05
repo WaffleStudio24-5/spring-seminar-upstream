@@ -23,7 +23,6 @@ class AuthorizationApiTest : ApiIntegrationTest() {
         getAs(rejected.token, "/seminars/$seminarId").andExpect { status { isForbidden() } }
         enroll(seminarId, rejected.token).andExpect { status { isForbidden() } }
 
-        // 담당 세미나가 있어도 승인 전의 운영진은 운영 기능을 쓸 수 없다.
         val pendingStaff = pendingStaff(seminarId)
         postAs(pendingStaff.token, "/seminars/$seminarId/sessions", sessionBody()).andExpect { status { isForbidden() } }
         getAs(pendingStaff.token, "/seminars/$seminarId/sessions").andExpect { status { isForbidden() } }
@@ -81,7 +80,6 @@ class AuthorizationApiTest : ApiIntegrationTest() {
 
         getAs(approvedRookie().token, "/users").andExpect { status { isForbidden() } }
 
-        // 운영진이 role=STAFF 로 요청해도 루키의 신청만 보인다.
         val staffView = getAs(staff.token, "/users?status=PENDING&role=STAFF&size=100").andExpect {
             status { isOk() }
             jsonPath("$.page") { value(0) }
@@ -168,7 +166,6 @@ class AuthorizationApiTest : ApiIntegrationTest() {
         val secondSeminarId = createSeminar()
         val staff = approvedStaff(firstSeminarId)
 
-        // 2주차에는 루키가 아닌 사용자의 신청이 400 이었지만, 3주차부터는 403 이다.
         enroll(firstSeminarId, staff.token).andExpect { status { isForbidden() } }
         getAs(staff.token, "/users/me/enrollments").andExpect { status { isForbidden() } }
 
@@ -176,7 +173,6 @@ class AuthorizationApiTest : ApiIntegrationTest() {
         enroll(firstSeminarId, rookie.token).andExpect { status { isCreated() } }
         val secondEnrollmentId = responseId(enroll(secondSeminarId, rookie.token).andExpect { status { isCreated() } })
 
-        // 최근에 신청한 순서
         getAs(rookie.token, "/users/me/enrollments").andExpect {
             status { isOk() }
             jsonPath("$.totalElements") { value(2) }

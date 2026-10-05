@@ -74,17 +74,14 @@ class AuthenticationApiTest : ApiIntegrationTest() {
         getAs(null, "/seminars/$seminarId").andExpect { status { isUnauthorized() } }
         postAs(null, "/seminars/$seminarId/enrollments").andExpect { status { isUnauthorized() } }
 
-        // Bearer 로 시작하지 않음
         mockMvc.get("/users/me") {
             header(HttpHeaders.AUTHORIZATION, "Token $validToken")
         }.andExpect {
             status { isUnauthorized() }
         }
 
-        // JWT 형식이 아님
         getAs("not-a-jwt", "/users/me").andExpect { status { isUnauthorized() } }
 
-        // 인증 실패는 요청값 검증과 리소스 조회보다 먼저 판단한다.
         postAs(null, "/seminars", """{"title":""}""").andExpect { status { isUnauthorized() } }
         getAs(null, "/seminars/999999").andExpect { status { isUnauthorized() } }
     }
@@ -93,13 +90,11 @@ class AuthenticationApiTest : ApiIntegrationTest() {
     fun `서명이 올바르지 않은 토큰은 401을 반환한다`() {
         val rookie = approvedRookie()
 
-        // 발급받은 토큰의 서명을 바꾼다.
         val (header, payload, signature) = rookie.token.split(".")
         val replaced = if (signature.first() == 'A') 'B' else 'A'
         val tampered = "$header.$payload.$replaced${signature.drop(1)}"
         getAs(tampered, "/users/me").andExpect { status { isUnauthorized() } }
 
-        // 서버가 모르는 키로 서명한 토큰
         val foreignKey = Keys.hmacShaKeyFor("this-is-not-the-server-secret-key-0123456789".toByteArray())
         val forged = Jwts.builder()
             .subject(rookie.id.toString())
@@ -134,8 +129,6 @@ class AuthenticationApiTest : ApiIntegrationTest() {
         val rookie = approvedRookie()
         val now = Instant.now()
 
-        // 서버가 발급한 토큰과 클레임이 같고 시각만 다른 토큰을 jwt.secret 으로 서명해 만든다.
-        // 아직 유효한 토큰은 통과해야 한다. 그래야 아래의 401 이 서명이 아니라 만료 때문임이 보장된다.
         val stillValid = resign(rookie.token, issuedAt = now.minusSeconds(60), expiresAt = now.plusSeconds(3540))
         getAs(stillValid, "/users/me").andExpect {
             status { isOk() }
@@ -149,7 +142,6 @@ class AuthenticationApiTest : ApiIntegrationTest() {
 
     @Test
     fun `로그아웃한 토큰은 더 이상 쓸 수 없다`() {
-        // 로그아웃은 이 테스트에서만 쓰는 사용자로 한다. 다른 테스트가 쓰는 토큰을 무효화하지 않기 위해서다.
         val seminarId = createSeminar()
         val rookie = approvedRookie()
         getAs(rookie.token, "/users/me").andExpect { status { isOk() } }
@@ -161,7 +153,6 @@ class AuthenticationApiTest : ApiIntegrationTest() {
         getAs(rookie.token, "/users/me").andExpect { status { isUnauthorized() } }
         getAs(rookie.token, "/seminars/$seminarId").andExpect { status { isUnauthorized() } }
         enroll(seminarId, rookie.token).andExpect { status { isUnauthorized() } }
-        // 같은 토큰으로 다시 로그아웃해도 무효화된 토큰이므로 401 이다.
         logout(rookie.token).andExpect { status { isUnauthorized() } }
     }
 

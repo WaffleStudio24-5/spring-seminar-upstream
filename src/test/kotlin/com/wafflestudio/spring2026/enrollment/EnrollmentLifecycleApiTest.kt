@@ -77,7 +77,6 @@ class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
             status { isNotFound() }
         }
 
-        // 신청하지 않은 세미나의 신청을 취소할 수는 없다.
         cancelEnrollment(seminarId, rookie.token).andExpect {
             status { isNotFound() }
         }
@@ -88,7 +87,6 @@ class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
         val seminarId = createSeminar(title = unique("Mine"), capacity = 5, totalGraceDays = 2)
         val rookie = approvedRookie()
 
-        // 신청이 없으면 빈 목록이고 전체 페이지 수는 0 이다.
         getAs(rookie.token, "/users/me/enrollments").andExpect {
             status { isOk() }
             jsonPath("$.content.length()") { value(0) }
@@ -117,7 +115,6 @@ class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
             jsonPath("$.content[0].createdAt") { exists() }
         }
 
-        // 취소한 신청은 목록에서 빠진다.
         cancelEnrollment(seminarId, rookie.token).andExpect { status { isNoContent() } }
         getAs(rookie.token, "/users/me/enrollments").andExpect {
             jsonPath("$.totalElements") { value(0) }

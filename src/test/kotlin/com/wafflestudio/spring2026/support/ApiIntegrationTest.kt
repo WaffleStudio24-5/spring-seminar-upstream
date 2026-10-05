@@ -44,17 +44,11 @@ abstract class ApiIntegrationTest {
 
         private val sequence = AtomicLong()
 
-        /** 팀이 Migration 으로 넣어야 하는 와장 계정. (docs/3주차 과제.md 의 "와장 계정 넣기") */
         const val ADMIN_EMAIL = "admin@wafflestudio.com"
         const val ADMIN_PASSWORD = "waggle1234"
 
-        /** 테스트가 가입시키는 사용자의 비밀번호 */
         const val PASSWORD = "password"
 
-        /**
-         * 테스트 동안 서버가 쓰는 JWT 서명 키. (docs/3주차 과제.md 의 "JWT Access Token")
-         * 서버와 같은 키를 알아야 만료된 토큰처럼 로그인으로는 받을 수 없는 토큰을 직접 만들 수 있다.
-         */
         const val TEST_JWT_SECRET = "waggle-test-jwt-secret-0123456789abcdef"
 
         @JvmStatic
@@ -67,7 +61,6 @@ abstract class ApiIntegrationTest {
         }
     }
 
-    /** 로그인한 사용자. 요청에 쓸 토큰을 함께 들고 다닌다. */
     protected data class Actor(
         val id: Long,
         val token: String,
@@ -81,8 +74,6 @@ abstract class ApiIntegrationTest {
 
     protected fun responseId(result: ResultActionsDsl): Long =
         objectMapper.readTree(result.andReturn().response.contentAsString).path("id").asLong()
-
-    // ---------------------------------------------------------------- 인증
 
     protected fun loginRequest(email: String, password: String): ResultActionsDsl =
         mockMvc.post("/auth/login") {
@@ -103,14 +94,9 @@ abstract class ApiIntegrationTest {
 
     protected fun logout(token: String?): ResultActionsDsl = postAs(token, "/auth/logout")
 
-    /** 토큰의 페이로드. 서명과 달리 페이로드는 키 없이 base64url 디코딩만으로 읽을 수 있다. */
     protected fun payloadOf(token: String): JsonNode =
         objectMapper.readTree(Base64.getUrlDecoder().decode(token.split(".")[1]))
 
-    /**
-     * 서버가 발급한 [token] 의 클레임을 그대로 두고 발급·만료 시각만 바꿔, 테스트용 키로 다시 서명한다.
-     * 팀이 더한 클레임(`jti` 등)도 그대로 남으므로 시각 외에는 서버가 발급한 토큰과 같다.
-     */
     protected fun resign(
         token: String,
         issuedAt: Instant,
@@ -154,8 +140,6 @@ abstract class ApiIntegrationTest {
     protected fun deleteAs(token: String?, path: String): ResultActionsDsl =
         mockMvc.delete(path) { token?.let { bearer(it) } }
 
-    // ---------------------------------------------------------------- 가입과 심사
-
     protected fun signupRookie(email: String = uniqueEmail()): Long =
         signup(email = email, role = "ROOKIE")
 
@@ -187,12 +171,10 @@ abstract class ApiIntegrationTest {
         token: String = adminToken(),
     ): ResultActionsDsl = patchAs(token, "/users/$userId/approval", mapOf("status" to status))
 
-    /** 가입 → 와장 승인 → 로그인 */
     protected fun approvedRookie(): Actor = signedUp(role = "ROOKIE", seminarId = null, review = "APPROVED")
 
     protected fun approvedStaff(seminarId: Long): Actor = signedUp(role = "STAFF", seminarId = seminarId, review = "APPROVED")
 
-    /** 가입 → 로그인. 심사를 받지 않은 PENDING 상태다. */
     protected fun pendingRookie(): Actor = signedUp(role = "ROOKIE", seminarId = null, review = null)
 
     protected fun pendingStaff(seminarId: Long): Actor = signedUp(role = "STAFF", seminarId = seminarId, review = null)
@@ -208,8 +190,6 @@ abstract class ApiIntegrationTest {
 
         return Actor(id = id, token = login(email))
     }
-
-    // ---------------------------------------------------------------- 세미나와 회차
 
     protected fun createSeminar(
         title: String = unique("Seminar"),
@@ -269,8 +249,6 @@ abstract class ApiIntegrationTest {
 
         return responseId(result)
     }
-
-    // ---------------------------------------------------------------- 수강 신청
 
     protected fun enroll(seminarId: Long, token: String): ResultActionsDsl =
         postAs(token, "/seminars/$seminarId/enrollments")
