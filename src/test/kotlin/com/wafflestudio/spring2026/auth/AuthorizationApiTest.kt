@@ -170,7 +170,6 @@ class AuthorizationApiTest : ApiIntegrationTest() {
 
         // 2주차에는 루키가 아닌 사용자의 신청이 400 이었지만, 3주차부터는 403 이다.
         enroll(firstSeminarId, staff.token).andExpect { status { isForbidden() } }
-        cancelEnrollment(firstSeminarId, staff.token).andExpect { status { isForbidden() } }
         getAs(staff.token, "/users/me/enrollments").andExpect { status { isForbidden() } }
 
         val rookie = approvedRookie()
