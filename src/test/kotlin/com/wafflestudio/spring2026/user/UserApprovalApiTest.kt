@@ -2,6 +2,7 @@ package com.wafflestudio.spring2026.user
 
 import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class UserApprovalApiTest : ApiIntegrationTest() {
@@ -129,18 +130,48 @@ class UserApprovalApiTest : ApiIntegrationTest() {
         assertTrue(pending.none { it.path("id").asLong() == approvedId })
 
         var page = 0
+        var totalPages = 1
         val approvedIds = mutableListOf<Long>()
-        while (true) {
-            val body = getAs(admin, "/users?status=APPROVED&size=100&page=$page").andExpect {
-                status { isOk() }
-            }.andReturn().response.contentAsString
-            val content = objectMapper.readTree(body).path("content").toList()
-            if (content.isEmpty()) break
+        while (page < totalPages) {
+            val body = responseJson(
+                getAs(admin, "/users?status=APPROVED&size=100&page=$page").andExpect {
+                    status { isOk() }
+                },
+            )
+            val content = body.path("content").toList()
+            totalPages = body.path("totalPages").asInt()
             assertTrue(content.none { it.path("email").asString() == ADMIN_EMAIL }, "와장 계정은 가입 신청 목록에 나오지 않아야 합니다.")
             assertTrue(content.none { it.path("role").asString() == "ADMIN" })
             approvedIds += content.map { it.path("id").asLong() }
             page++
         }
         assertTrue(approvedId in approvedIds)
+    }
+
+    @Test
+    fun `가입 신청 목록은 page 와 size 에 맞춰 나눠 보여 준다`() {
+        val admin = adminToken()
+        val seminarId = createSeminar()
+        val newestFirst = List(5) { signupStaff(seminarId) }
+            .onEach { approve(it, "REJECTED", admin).andExpect { status { isOk() } } }
+            .reversed()
+
+        fun requestPage(page: Int) = getAs(admin, "/users?status=REJECTED&role=STAFF&page=$page&size=2").andExpect {
+            status { isOk() }
+            jsonPath("$.page") { value(page) }
+            jsonPath("$.size") { value(2) }
+        }
+
+        val first = requestPage(0)
+        val totalElements = responseJson(first).path("totalElements").asInt()
+        val totalPages = responseJson(first).path("totalPages").asInt()
+        assertEquals((totalElements + 1) / 2, totalPages, "totalPages 는 totalElements 를 size 로 나눠 올림한 값이어야 합니다.")
+
+        assertEquals(newestFirst.subList(0, 2), contentIds(first), "page=0 의 항목이 다릅니다.")
+        assertEquals(newestFirst.subList(2, 4), contentIds(requestPage(1)), "page=1 의 항목이 다릅니다.")
+        assertEquals(newestFirst[4], contentIds(requestPage(2)).first(), "page=2 의 첫 항목이 다릅니다.")
+
+        val lastPage = totalPages - 1
+        assertEquals(totalElements - lastPage * 2, contentIds(requestPage(lastPage)).size, "마지막 페이지에는 남은 항목만 있어야 합니다.")
     }
 }

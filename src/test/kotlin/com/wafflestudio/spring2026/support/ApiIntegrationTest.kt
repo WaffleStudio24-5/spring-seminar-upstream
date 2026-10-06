@@ -72,8 +72,13 @@ abstract class ApiIntegrationTest {
 
     protected fun now(): OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC).withNano(0)
 
-    protected fun responseId(result: ResultActionsDsl): Long =
-        objectMapper.readTree(result.andReturn().response.contentAsString).path("id").asLong()
+    protected fun responseJson(result: ResultActionsDsl): JsonNode =
+        objectMapper.readTree(result.andReturn().response.contentAsString)
+
+    protected fun responseId(result: ResultActionsDsl): Long = responseJson(result).path("id").asLong()
+
+    protected fun contentIds(result: ResultActionsDsl): List<Long> =
+        responseJson(result).path("content").toList().map { it.path("id").asLong() }
 
     protected fun loginRequest(email: String, password: String): ResultActionsDsl =
         mockMvc.post("/auth/login") {

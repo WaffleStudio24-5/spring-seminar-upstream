@@ -2,6 +2,7 @@ package com.wafflestudio.spring2026.seminar
 
 import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SeminarManagementApiTest : ApiIntegrationTest() {
@@ -103,5 +104,22 @@ class SeminarManagementApiTest : ApiIntegrationTest() {
         }
 
         getAs(null, "/seminars?status=UNKNOWN").andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `세미나 목록은 page 와 size 에 맞춰 나눠 보여 준다`() {
+        val keyword = unique("Paged")
+        val seminarIds = List(5) { createSeminar(title = "$keyword $it") }
+
+        for ((page, expected) in seminarIds.chunked(2).withIndex()) {
+            val result = getAs(null, "/seminars?keyword=$keyword&page=$page&size=2").andExpect {
+                status { isOk() }
+                jsonPath("$.page") { value(page) }
+                jsonPath("$.size") { value(2) }
+                jsonPath("$.totalElements") { value(5) }
+                jsonPath("$.totalPages") { value(3) }
+            }
+            assertEquals(expected, contentIds(result), "page=$page 의 항목이 다릅니다.")
+        }
     }
 }

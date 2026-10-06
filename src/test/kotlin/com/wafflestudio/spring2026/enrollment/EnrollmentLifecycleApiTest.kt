@@ -2,6 +2,7 @@ package com.wafflestudio.spring2026.enrollment
 
 import com.wafflestudio.spring2026.support.ApiIntegrationTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
     @Test
@@ -118,6 +119,25 @@ class EnrollmentLifecycleApiTest : ApiIntegrationTest() {
         cancelEnrollment(seminarId, rookie.token).andExpect { status { isNoContent() } }
         getAs(rookie.token, "/users/me/enrollments").andExpect {
             jsonPath("$.totalElements") { value(0) }
+        }
+    }
+
+    @Test
+    fun `내 수강 목록은 page 와 size 에 맞춰 나눠 보여 준다`() {
+        val rookie = approvedRookie()
+        val enrollmentIds = List(5) { createSeminar() }.map { seminarId ->
+            responseId(enroll(seminarId, rookie.token).andExpect { status { isCreated() } })
+        }
+
+        for ((page, expected) in enrollmentIds.reversed().chunked(2).withIndex()) {
+            val result = getAs(rookie.token, "/users/me/enrollments?page=$page&size=2").andExpect {
+                status { isOk() }
+                jsonPath("$.page") { value(page) }
+                jsonPath("$.size") { value(2) }
+                jsonPath("$.totalElements") { value(5) }
+                jsonPath("$.totalPages") { value(3) }
+            }
+            assertEquals(expected, contentIds(result), "page=$page 의 항목이 다릅니다.")
         }
     }
 }
