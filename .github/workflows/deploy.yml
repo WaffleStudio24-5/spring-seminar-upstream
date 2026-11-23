@@ -1,0 +1,102 @@
+# PR 과 main push 에서 테스트를 실행하고, main 에 push 하면 이미지를 빌드해 와플 클러스터에 배포합니다.
+# 저장소의 Actions secret 에 KUBECONFIG, DB_PASSWORD, JWT_SECRET 을 등록해야 합니다.
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    if: github.repository != 'WaffleStudio24-5/spring-seminar-upstream'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run tests
+        run: ./gradlew test
+
+  deploy:
+    # PR 에서는 테스트만 실행하고, main 에 반영될 때만 배포합니다.
+    if: github.repository != 'WaffleStudio24-5/spring-seminar-upstream' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    concurrency: deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read deployment name
+        run: |
+          if grep -q "<team>" k8s/deployment.yaml; then echo "k8s/deployment.yaml still contains <team>"; exit 1; fi
+          NAME=$(sed -n 's/^  name: *\([a-z0-9-]*\).*/\1/p' k8s/deployment.yaml | head -1)
+          if [ -z "$NAME" ]; then echo "cannot read metadata.name from k8s/deployment.yaml"; exit 1; fi
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Set up kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_DATA" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Apply secret
+        # Actions secret 의 값으로 Kubernetes Secret 을 만듭니다. 이미 있으면 값을 갱신합니다.
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          if [ -z "$DB_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then echo "DB_PASSWORD or JWT_SECRET is not set"; exit 1; fi
+          kubectl create secret generic "$NAME" \
+            --from-literal=SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
+            --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy
+        # IMAGE_PLACEHOLDER 를 이번에 빌드한 이미지 주소로 바꿔서 apply 하고, 새 Pod 가 준비될 때까지 기다립니다.
+        run: |
+          sed "s|IMAGE_PLACEHOLDER|$IMAGE|" k8s/deployment.yaml | kubectl apply -f -
+          kubectl rollout status "deployment/$NAME" --timeout=180s
+
+      - name: Show status on failure
+        if: failure() && env.NAME != ''
+        run: |
+          kubectl get pods -l "app=$NAME" -o wide || true
+          kubectl describe pods -l "app=$NAME" | tail -n 25 || true
+          kubectl logs -l "app=$NAME" --tail=80 --all-containers --prefix || true

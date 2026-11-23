@@ -1,0 +1,56 @@
+# Waggle 서버의 Deployment 양식입니다. TODO 1 이 적힌 곳의 <team> 을 팀 이름으로 바꿔 주세요.
+# 직접 apply 하지 않습니다. main 에 push 하면 .github/workflows/deploy.yml 이 적용합니다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waggle-<team>-api            # TODO 1: 팀 이름으로 바꾸기
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: waggle-<team>-api         # TODO 1
+  template:
+    metadata:
+      labels:
+        app: waggle-<team>-api       # TODO 1
+    spec:
+      containers:
+        - name: waggle-server
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8080
+          env:
+        
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/spring_seminar_<team>?characterEncoding=UTF-8   # TODO 1
+            - name: SPRING_DATASOURCE_USERNAME
+              value: <team>   # TODO 1
+            # 브라우저의 요청을 허용할 프론트 출처(CORS)입니다. 쉼표로 여러 개를 적을 수 있습니다.
+            # Spring 에서는 waggle.cors.allowed-origins 프로퍼티로 읽어야 합니다.
+            - name: WAGGLE_CORS_ALLOWED_ORIGINS
+              value: https://waggle-<team>.wafflestudio.com   # TODO 1
+          
+          # 비밀 값(DB 비밀번호, JWT 서명 키)은 yaml 에 직접 적지 않습니다. 워크플로가 만든 Secret 의 모든 키를 환경 변수로 가져옵니다.
+          envFrom:
+            - secretRef:
+                name: waggle-<team>-api   # TODO 1
+         
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          
+          startupProbe:
+            httpGet:
+              path: /v3/api-docs
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 30
+          
+          readinessProbe:
+            httpGet:
+              path: /v3/api-docs
+              port: 8080
+            periodSeconds: 10
