@@ -1,0 +1,18 @@
+# 빌드에 필요 없는 파일은 이미지 빌드 컨텍스트에 넣지 않는다.
+.git
+.github
+.gradle
+.kotlin
+.idea
+.vscode
+build
+docs
+k8s
+*.md
+
+# 비밀 값과 로컬 전용 파일
+deploy
+.env
+.claude
+.gstack
+V1__init.template.sql
